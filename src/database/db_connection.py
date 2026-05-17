@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote_plus
 
+import os
 import yaml
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
-import os
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -26,34 +27,89 @@ def load_config(config_path: Optional[Path] = None) -> dict:
         return yaml.safe_load(file)
 
 
-def get_database_url() -> str:
+def get_streamlit_secrets() -> dict | None:
     """
-    Build SQLAlchemy database URL from .env values.
-    """
-    load_dotenv(ENV_PATH)
+    Return Streamlit Cloud database secrets if running in Streamlit
+    and secrets are configured.
 
-    host = os.getenv("DB_HOST")
-    port = os.getenv("DB_PORT")
-    db_name = os.getenv("DB_NAME")
-    user = os.getenv("DB_USER")
-    password = os.getenv("DB_PASSWORD")
+    Expected secrets format:
+
+    [database]
+    host = "..."
+    port = 5432
+    database = "..."
+    user = "..."
+    password = "..."
+    """
+    try:
+        import streamlit as st
+
+        if "database" in st.secrets:
+            return dict(st.secrets["database"])
+
+    except Exception:
+        return None
+
+    return None
+
+
+def get_database_settings() -> dict:
+    """
+    Load database settings from Streamlit secrets if available,
+    otherwise fall back to local .env variables.
+    """
+    streamlit_secrets = get_streamlit_secrets()
+
+    if streamlit_secrets:
+        settings = {
+            "host": streamlit_secrets.get("host"),
+            "port": streamlit_secrets.get("port"),
+            "database": streamlit_secrets.get("database"),
+            "user": streamlit_secrets.get("user"),
+            "password": streamlit_secrets.get("password"),
+        }
+    else:
+        load_dotenv(ENV_PATH)
+
+        settings = {
+            "host": os.getenv("DB_HOST"),
+            "port": os.getenv("DB_PORT"),
+            "database": os.getenv("DB_NAME"),
+            "user": os.getenv("DB_USER"),
+            "password": os.getenv("DB_PASSWORD"),
+        }
 
     missing = [
         key
-        for key, value in {
-            "DB_HOST": host,
-            "DB_PORT": port,
-            "DB_NAME": db_name,
-            "DB_USER": user,
-            "DB_PASSWORD": password,
-        }.items()
-        if not value
+        for key, value in settings.items()
+        if value is None or str(value).strip() == ""
     ]
 
     if missing:
-        raise ValueError(f"Missing required .env variables: {missing}")
+        raise ValueError(
+            "Missing required database settings: "
+            f"{missing}. Configure .env locally or Streamlit secrets in deployment."
+        )
 
-    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}"
+    return settings
+
+
+def get_database_url() -> str:
+    """
+    Build SQLAlchemy database URL from either Streamlit secrets or .env values.
+    """
+    settings = get_database_settings()
+
+    user = quote_plus(str(settings["user"]))
+    password = quote_plus(str(settings["password"]))
+    host = settings["host"]
+    port = settings["port"]
+    database = settings["database"]
+
+    return (
+        f"postgresql+psycopg2://{user}:{password}"
+        f"@{host}:{port}/{database}"
+    )
 
 
 def get_engine() -> Engine:
