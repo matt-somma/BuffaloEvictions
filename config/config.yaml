@@ -1,0 +1,28 @@
+project:
+  name: buffalo_housing_risk_platform
+  environment: local
+
+database:
+  default_schema: raw
+  staging_schema: staging
+  analytics_schema: analytics
+  serving_schema: serving
+
+paths:
+  data_raw: data/raw
+  data_staging: data/staging
+  data_processed: data/processed
+  logs: logs
+
+sources:
+  census:
+    base_url: https://api.census.gov/data
+    year: 2022
+    dataset: acs/acs5
+    state_fips: "36"
+    county_fips: "029"
+
+  buffalo_open_data:
+    base_url: https://data.buffalony.gov/resource
+    code_violations_dataset_id: ivrf-k9vm
+    page_size: 50000
