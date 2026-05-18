@@ -65,7 +65,7 @@ def _load_alias_map() -> dict[str, str]:
 
 def _get_public_settings(secrets: Mapping[str, object] | None = None) -> dict[str, object]:
     settings = {
-        "enabled": False,
+        "enabled": True,
         "include_geoid": False,
         "alias_prefix": "NBH",
         "tract_prefix": "CT",
@@ -181,6 +181,28 @@ def _build_tract_keys(
 
 def public_labeling_enabled(secrets: Mapping[str, object] | None = None) -> bool:
     return bool(_get_public_settings(secrets)["enabled"])
+
+
+def public_label_cache_key(secrets: Mapping[str, object] | None = None) -> str:
+    settings = _get_public_settings(secrets)
+    file_markers = []
+
+    for path in (SETTINGS_PATH, ALIASES_PATH, TRACT_ALIASES_PATH):
+        if path.exists():
+            stat = path.stat()
+            file_markers.append(f"{path.name}:{int(stat.st_mtime_ns)}:{stat.st_size}")
+        else:
+            file_markers.append(f"{path.name}:missing")
+
+    return "|".join(
+        [
+            f"enabled={int(settings['enabled'])}",
+            f"include_geoid={int(settings['include_geoid'])}",
+            f"alias_prefix={settings['alias_prefix']}",
+            f"tract_prefix={settings['tract_prefix']}",
+            *file_markers,
+        ]
+    )
 
 
 def mask_dataframe_public_labels(
