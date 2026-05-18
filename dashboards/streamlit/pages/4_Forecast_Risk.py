@@ -27,6 +27,7 @@ SELECT
     f.forecast_horizon,
     f.neighborhood_trajectory,
     f.actual_target,
+    f.score_set,
     f.predicted_probability,
     f.predicted_class,
     f.risk_percentile,
@@ -124,8 +125,11 @@ with st.expander("How to interpret the forecast metrics"):
   They help explain *why* the model is flagging a tract.
 
 - **Actual target**
-  appears only because this dataset includes held-out scored evaluation rows.
-  It is mainly useful for model review, not for interpreting a truly future unknown month.
+  appears only on historical backtest rows. In the latest live-scored months it will be blank,
+  because the future outcome has not been observed yet.
+
+- **Score set**
+  distinguishes held-out backtest rows from live current-month scoring rows.
 """
     )
 
@@ -206,6 +210,16 @@ selected_month = st.selectbox(
 )
 
 month_df = tract_df[tract_df["month_str"] == selected_month].copy()
+score_sets_in_month = sorted(month_df["score_set"].dropna().unique().tolist())
+
+if score_sets_in_month == ["live_scoring"]:
+    st.caption(
+        "This selected month is a live forecast snapshot. Actual outcomes are not yet available."
+    )
+elif score_sets_in_month == ["holdout_backtest"]:
+    st.caption(
+        "This selected month is part of the held-out backtest period, so actual outcomes are available for evaluation."
+    )
 
 month_df["forecast_horizon"] = pd.Categorical(
     month_df["forecast_horizon"],
@@ -316,6 +330,7 @@ explanation_df = month_df[
         "risk_percentile",
         "predicted_class",
         "actual_target",
+        "score_set",
         "top_drivers",
     ]
 ].copy()

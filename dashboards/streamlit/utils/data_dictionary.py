@@ -30,9 +30,14 @@ SOURCE_OBJECTS = [
         "used_for": "Model training set with lagged, spillover, demographic, persistence, and future-target fields.",
     },
     {
+        "object_name": "analytics.tract_ml_scoring_features",
+        "grain": "One row per tract per month",
+        "used_for": "Live scoring set for the newest months, using the same features as training but without observed future targets yet.",
+    },
+    {
         "object_name": "analytics.tract_forecast_scores",
         "grain": "One row per tract per month per forecast horizon",
-        "used_for": "Forecast pages, predicted risk, percentile ranking, thresholded class, and SHAP driver summaries.",
+        "used_for": "Forecast pages, predicted risk, percentile ranking, thresholded class, SHAP driver summaries, and both backtest and live-scoring outputs.",
     },
     {
         "object_name": "analytics.neighborhood_transition_matrix",
@@ -292,6 +297,14 @@ METRIC_DEFINITIONS = [
         "business_interpretation": "These are the future severe-distress outcomes the model is trying to anticipate at different lead times.",
     },
     {
+        "metric": "score_set",
+        "category": "Forecast Outputs",
+        "source_object": "analytics.tract_forecast_scores",
+        "definition": "Flag indicating whether a scored row comes from historical holdout backtesting or live current-month scoring.",
+        "calculation": "Assigned by the training pipeline as holdout_backtest or live_scoring",
+        "business_interpretation": "This tells you whether you are looking at a row with known historical outcomes or a live forward-looking forecast where outcomes are not yet observed.",
+    },
+    {
         "metric": "predicted_probability",
         "category": "Forecast Outputs",
         "source_object": "analytics.tract_forecast_scores",
@@ -343,9 +356,9 @@ METRIC_DEFINITIONS = [
         "metric": "actual_target",
         "category": "Forecast Outputs",
         "source_object": "analytics.tract_forecast_scores",
-        "definition": "Observed evaluation target in the held-out scored data. Mainly useful for model assessment, not for future unknown months.",
+        "definition": "Observed evaluation target in held-out backtest rows. This field is null for live-scored rows because the future outcome is not yet known.",
         "calculation": "Renamed from the corresponding future_distress horizon target",
-        "business_interpretation": "This shows what eventually happened in scored historical evaluation data, which is helpful for judging model accuracy but not available for future months.",
+        "business_interpretation": "When populated, this shows what eventually happened in historical backtest data. When blank, you are looking at a live forecast month where the outcome has not happened yet or is not yet observed.",
     },
     {
         "metric": "calibration_method",

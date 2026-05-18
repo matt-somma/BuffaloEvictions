@@ -30,8 +30,11 @@ from src.database.db_connection import get_engine
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_PATH = PROJECT_ROOT / "data" / "ml" / "tract_ml_features.csv"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "model_results"
+LABELED_DATASET_QUERY = "SELECT * FROM analytics.tract_ml_features;"
+LIVE_SCORING_DATASET_QUERY = "SELECT * FROM analytics.tract_ml_scoring_features;"
+TRAIN_TEST_CUTOFF = pd.Timestamp("2023-01-01")
+MODEL_VERSION = "v3_time_aware_live_scoring"
 
 
 FEATURES = [
@@ -169,6 +172,18 @@ def build_model(C: float, l1_ratio: float) -> Pipeline:
             ),
         ]
     )
+
+
+def load_modeling_datasets() -> tuple[pd.DataFrame, pd.DataFrame]:
+    engine = get_engine()
+
+    labeled_df = pd.read_sql(LABELED_DATASET_QUERY, engine)
+    live_scoring_df = pd.read_sql(LIVE_SCORING_DATASET_QUERY, engine)
+
+    for df in (labeled_df, live_scoring_df):
+        df["month_date"] = pd.to_datetime(df["month_date"])
+
+    return labeled_df, live_scoring_df
 
 
 def create_time_aware_folds(
@@ -419,6 +434,38 @@ def tune_threshold(
     return best_result
 
 
+def compute_shap_outputs(
+    model: Pipeline,
+    X: pd.DataFrame,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, pd.DataFrame]:
+    preprocessor = model.named_steps["preprocessor"]
+    classifier = model.named_steps["classifier"]
+    feature_names = preprocessor.get_feature_names_out()
+
+    X_transformed = preprocessor.transform(X)
+
+    if hasattr(X_transformed, "toarray"):
+        X_transformed = X_transformed.toarray()
+
+    explainer = shap.LinearExplainer(
+        classifier,
+        X_transformed,
+        feature_names=feature_names,
+    )
+
+    shap_values = explainer.shap_values(X_transformed)
+    mean_abs_shap = np.abs(shap_values).mean(axis=0)
+
+    shap_importance_df = pd.DataFrame(
+        {
+            "feature": feature_names,
+            "mean_abs_shap": mean_abs_shap,
+        }
+    ).sort_values("mean_abs_shap", ascending=False)
+
+    return X_transformed, feature_names, shap_values, shap_importance_df
+
+
 def make_safe_feature_name(feature: str) -> str:
     return (
         feature
@@ -431,9 +478,10 @@ def make_safe_feature_name(feature: str) -> str:
 
 
 def create_forecast_output(
-    test_df: pd.DataFrame,
+    scored_df: pd.DataFrame,
     target_col: str,
     horizon_label: str,
+    score_set: str,
     decision_threshold: float,
     calibration_method: str,
     raw_probabilities: np.ndarray,
@@ -443,7 +491,7 @@ def create_forecast_output(
     feature_names: np.ndarray,
     shap_importance_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    output_df = test_df.copy()
+    output_df = scored_df.copy()
 
     output_df["raw_predicted_probability"] = raw_probabilities
     output_df["predicted_probability"] = probabilities
@@ -503,16 +551,19 @@ def create_forecast_output(
         columns={target_col: "actual_target"}
     )
 
+    forecast_output["score_set"] = score_set
+    forecast_output["label_available"] = forecast_output["actual_target"].notna()
     forecast_output["forecast_horizon"] = horizon_label
     forecast_output["target_column"] = target_col
     forecast_output["model_name"] = "elastic_net_logistic_regression"
-    forecast_output["model_version"] = "v2_time_aware_calibrated"
+    forecast_output["model_version"] = MODEL_VERSION
 
     return forecast_output
 
 
 def train_one_horizon(
-    df: pd.DataFrame,
+    labeled_df: pd.DataFrame,
+    live_scoring_df: pd.DataFrame,
     horizon_label: str,
     target_col: str,
 ) -> pd.DataFrame:
@@ -524,16 +575,20 @@ def train_one_horizon(
 
     required_cols = FEATURES + [target_col, "month_date", "geoid"]
 
-    model_df = df[required_cols].copy()
+    model_df = labeled_df[required_cols].copy()
     model_df = model_df[model_df[target_col].notna()].copy()
 
     train_df = model_df[
-        model_df["month_date"] < "2023-01-01"
+        model_df["month_date"] < TRAIN_TEST_CUTOFF
     ].copy().sort_values(["month_date", "geoid"]).reset_index(drop=True)
 
     test_df = model_df[
-        model_df["month_date"] >= "2023-01-01"
+        model_df["month_date"] >= TRAIN_TEST_CUTOFF
     ].copy().sort_values(["month_date", "geoid"]).reset_index(drop=True)
+
+    scoring_df = live_scoring_df[required_cols].copy().sort_values(
+        ["month_date", "geoid"]
+    ).reset_index(drop=True)
 
     print()
     print("=== TEMPORAL SPLIT ===")
@@ -554,6 +609,17 @@ def train_one_horizon(
         f"to "
         f"{test_df['month_date'].max().date()}"
     )
+
+    print()
+    print("=== LIVE SCORING WINDOW ===")
+    print(f"Live rows: {len(scoring_df):,}")
+    if not scoring_df.empty:
+        print(
+            f"Live scoring period: "
+            f"{scoring_df['month_date'].min().date()} "
+            f"to "
+            f"{scoring_df['month_date'].max().date()}"
+        )
 
     X_train = train_df[FEATURES]
     y_train = train_df[target_col]
@@ -708,28 +774,10 @@ def train_one_horizon(
 
     print()
     print("=== SHAP EXPLAINABILITY ===")
-
-    X_test_transformed = preprocessor.transform(X_test)
-
-    if hasattr(X_test_transformed, "toarray"):
-        X_test_transformed = X_test_transformed.toarray()
-
-    explainer = shap.LinearExplainer(
-        classifier,
-        X_test_transformed,
-        feature_names=feature_names,
+    X_test_transformed, feature_names, shap_values, shap_importance_df = compute_shap_outputs(
+        model,
+        X_test,
     )
-
-    shap_values = explainer.shap_values(X_test_transformed)
-
-    mean_abs_shap = np.abs(shap_values).mean(axis=0)
-
-    shap_importance_df = pd.DataFrame(
-        {
-            "feature": feature_names,
-            "mean_abs_shap": mean_abs_shap,
-        }
-    ).sort_values("mean_abs_shap", ascending=False)
 
     print()
     print(shap_importance_df.head(25).to_string(index=False))
@@ -759,10 +807,11 @@ def train_one_horizon(
     print(f"Saved SHAP importance to {shap_importance_path}")
     print(f"Saved SHAP summary plot to {shap_plot_path}")
 
-    forecast_output = create_forecast_output(
-        test_df=test_df,
+    backtest_output = create_forecast_output(
+        scored_df=test_df,
         target_col=target_col,
         horizon_label=horizon_label,
+        score_set="holdout_backtest",
         decision_threshold=threshold_result["threshold"],
         calibration_method=calibration_result["method"],
         raw_probabilities=raw_probabilities,
@@ -773,22 +822,71 @@ def train_one_horizon(
         shap_importance_df=shap_importance_df,
     )
 
-    return forecast_output
+    print()
+    print("Training production model on all labeled rows for live scoring...")
+    production_model = build_model(
+        C=float(best_params["C"]),
+        l1_ratio=float(best_params["l1_ratio"]),
+    )
+    production_fit_convergence_warnings = fit_model(
+        production_model,
+        model_df[FEATURES],
+        model_df[target_col],
+    )
+    print(
+        "Production fit convergence warnings: "
+        f"{production_fit_convergence_warnings}"
+    )
+
+    live_output = pd.DataFrame()
+
+    if not scoring_df.empty:
+        X_live = scoring_df[FEATURES]
+        live_raw_probabilities = production_model.predict_proba(X_live)[:, 1]
+        live_probabilities = calibrator.predict(live_raw_probabilities)
+        live_predictions = (
+            live_probabilities >= threshold_result["threshold"]
+        ).astype(int)
+
+        _, live_feature_names, live_shap_values, live_shap_importance_df = compute_shap_outputs(
+            production_model,
+            X_live,
+        )
+
+        live_output = create_forecast_output(
+            scored_df=scoring_df,
+            target_col=target_col,
+            horizon_label=horizon_label,
+            score_set="live_scoring",
+            decision_threshold=threshold_result["threshold"],
+            calibration_method=calibration_result["method"],
+            raw_probabilities=live_raw_probabilities,
+            probabilities=live_probabilities,
+            predictions=live_predictions,
+            shap_values=live_shap_values,
+            feature_names=live_feature_names,
+            shap_importance_df=live_shap_importance_df,
+        )
+
+    return pd.concat(
+        [backtest_output, live_output],
+        ignore_index=True,
+    )
 
 
 def main() -> None:
-    print("Loading modeling dataset...")
+    print("Loading labeled backtest and live scoring datasets...")
+    labeled_df, live_scoring_df = load_modeling_datasets()
 
-    df = pd.read_csv(DATA_PATH)
-    df["month_date"] = pd.to_datetime(df["month_date"])
-
-    print(f"Rows loaded: {len(df):,}")
+    print(f"Labeled rows loaded: {len(labeled_df):,}")
+    print(f"Live scoring rows loaded: {len(live_scoring_df):,}")
 
     all_forecast_outputs = []
 
     for horizon_label, target_col in TARGETS.items():
         forecast_output = train_one_horizon(
-            df=df,
+            labeled_df=labeled_df,
+            live_scoring_df=live_scoring_df,
             horizon_label=horizon_label,
             target_col=target_col,
         )
@@ -820,6 +918,15 @@ def main() -> None:
     print(
         final_output
         .groupby("forecast_horizon")
+        .size()
+        .to_string()
+    )
+
+    print()
+    print("Forecast rows by score set:")
+    print(
+        final_output
+        .groupby("score_set")
         .size()
         .to_string()
     )

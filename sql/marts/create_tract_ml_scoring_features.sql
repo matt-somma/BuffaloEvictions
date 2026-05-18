@@ -1,9 +1,9 @@
--- Labeled backtest / evaluation feature set.
--- This table intentionally stops 12 months before the latest observed month
--- so every row has a complete future window for 1m / 3m / 6m / 12m targets.
-DROP TABLE IF EXISTS analytics.tract_ml_features;
+-- Unlabeled live scoring feature set.
+-- This table covers the newest months that are excluded from analytics.tract_ml_features
+-- because future outcome labels are not yet fully observed.
+DROP TABLE IF EXISTS analytics.tract_ml_scoring_features;
 
-CREATE TABLE analytics.tract_ml_features AS
+CREATE TABLE analytics.tract_ml_scoring_features AS
 WITH state_history AS (
     SELECT
         geoid,
@@ -32,59 +32,6 @@ WITH state_history AS (
         ) AS acceleration_score_lag_1m
     FROM analytics.tract_state_history
     WHERE geoid <> 'UNKNOWN'
-),
-
-future_window AS (
-    SELECT
-        s.geoid,
-        s.month_date,
-
-        MAX(
-            CASE
-                WHEN f.month_date <= s.month_date + INTERVAL '1 month'
-                 AND f.neighborhood_trajectory IN ('Rapid Deterioration', 'Chronic Distress')
-                THEN 1 ELSE 0
-            END
-        ) AS future_distress_1m,
-
-        MAX(
-            CASE
-                WHEN f.month_date <= s.month_date + INTERVAL '3 months'
-                 AND f.neighborhood_trajectory IN ('Rapid Deterioration', 'Chronic Distress')
-                THEN 1 ELSE 0
-            END
-        ) AS future_distress_3m,
-
-        MAX(
-            CASE
-                WHEN f.month_date <= s.month_date + INTERVAL '6 months'
-                 AND f.neighborhood_trajectory IN ('Rapid Deterioration', 'Chronic Distress')
-                THEN 1 ELSE 0
-            END
-        ) AS future_distress_6m,
-
-        MAX(
-            CASE
-                WHEN f.month_date <= s.month_date + INTERVAL '12 months'
-                 AND f.neighborhood_trajectory IN ('Rapid Deterioration', 'Chronic Distress')
-                THEN 1 ELSE 0
-            END
-        ) AS future_distress_12m,
-
-        MIN(f.month_date) FILTER (
-            WHERE f.neighborhood_trajectory IN ('Rapid Deterioration', 'Chronic Distress')
-        ) AS first_future_distress_month
-
-    FROM state_history s
-
-    LEFT JOIN analytics.tract_state_history f
-        ON s.geoid = f.geoid
-       AND f.month_date > s.month_date
-       AND f.month_date <= s.month_date + INTERVAL '12 months'
-
-    GROUP BY
-        s.geoid,
-        s.month_date
 ),
 
 persistence_flags AS (
@@ -234,19 +181,12 @@ SELECT
     c.properties_with_violations_per_1000_housing_units,
     c.active_properties_per_1000_housing_units,
 
-    fw.future_distress_1m,
-    fw.future_distress_3m,
-    fw.future_distress_6m,
-    fw.future_distress_12m,
-    fw.first_future_distress_month,
-
-    CASE
-        WHEN fw.first_future_distress_month IS NULL THEN NULL
-        ELSE (
-            EXTRACT(YEAR FROM age(fw.first_future_distress_month, s.month_date)) * 12
-          + EXTRACT(MONTH FROM age(fw.first_future_distress_month, s.month_date))
-        )::int
-    END AS months_until_future_distress,
+    NULL::int AS future_distress_1m,
+    NULL::int AS future_distress_3m,
+    NULL::int AS future_distress_6m,
+    NULL::int AS future_distress_12m,
+    NULL::date AS first_future_distress_month,
+    NULL::int AS months_until_future_distress,
 
     sp.neighbor_count,
     sp.neighbor_avg_trajectory_score,
@@ -278,18 +218,14 @@ LEFT JOIN code_features c
     ON s.geoid = c.geoid
    AND s.month_date = c.month_date
 
-LEFT JOIN future_window fw
-    ON s.geoid = fw.geoid
-   AND s.month_date = fw.month_date
-
 LEFT JOIN analytics.tract_spillover_features sp
     ON s.geoid = sp.geoid
    AND s.month_date = sp.month_date
 
-WHERE s.month_date <= (
+WHERE s.month_date > (
     SELECT MAX(month_date) - INTERVAL '12 months'
     FROM analytics.tract_state_history
 );
 
-ALTER TABLE analytics.tract_ml_features
+ALTER TABLE analytics.tract_ml_scoring_features
 ADD PRIMARY KEY (geoid, month_date);
