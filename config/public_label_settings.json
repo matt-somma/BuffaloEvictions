@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "include_geoid": false,
+  "alias_prefix": "NBH",
+  "tract_prefix": "CT"
+}
