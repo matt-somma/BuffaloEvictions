@@ -2,7 +2,19 @@ DROP TABLE IF EXISTS analytics.housing_risk_features_v2;
 
 CREATE TABLE analytics.housing_risk_features_v2 AS
 
-WITH base AS (
+WITH latest_code_features AS (
+    SELECT DISTINCT ON (geoid)
+        geoid,
+        active_cases_per_1000_housing_units,
+        cases_last_12m_per_1000_housing_units,
+        properties_with_violations_per_1000_housing_units
+    FROM analytics.code_violation_features
+    ORDER BY
+        geoid,
+        month_date DESC
+),
+
+base AS (
     SELECT
         h.geoid,
         h.acs_year,
@@ -34,7 +46,7 @@ WITH base AS (
 
     FROM analytics.housing_risk_features h
 
-    LEFT JOIN analytics.code_violation_features cv
+    LEFT JOIN latest_code_features cv
         ON h.geoid = cv.geoid
 ),
 

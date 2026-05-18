@@ -164,9 +164,12 @@ acs AS (
 code_features AS (
     SELECT
         geoid,
+        month_date,
         total_cases,
         active_cases,
         cases_last_12m,
+        cases_last_6m,
+        cases_last_3m,
         active_cases_per_1000_housing_units,
         cases_last_12m_per_1000_housing_units,
         cases_last_6m_per_1000_housing_units,
@@ -270,6 +273,7 @@ LEFT JOIN acs a
 
 LEFT JOIN code_features c
     ON s.geoid = c.geoid
+   AND s.month_date = c.month_date
 
 LEFT JOIN future_window fw
     ON s.geoid = fw.geoid

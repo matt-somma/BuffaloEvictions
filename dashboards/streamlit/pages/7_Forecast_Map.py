@@ -6,13 +6,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
-import json
-
-import geopandas as gpd
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from shapely.geometry import shape
 
 from dashboards.streamlit.utils.db import run_query
 
@@ -52,7 +48,8 @@ LEFT JOIN analytics.tract_neighborhood_labels n
     ON f.geoid::text = n.geoid
 
 WHERE r.geom IS NOT NULL
-  AND f.geoid::text <> 'UNKNOWN';
+  AND f.geoid::text <> 'UNKNOWN'
+  AND f.forecast_horizon = :forecast_horizon;
 """
 
 
@@ -159,7 +156,7 @@ geojson = {
     "features": [],
 }
 
-for _, row in filtered.iterrows():
+for _, row in filtered.drop_duplicates(subset="geoid").iterrows():
     geojson["features"].append(
         {
             "type": "Feature",

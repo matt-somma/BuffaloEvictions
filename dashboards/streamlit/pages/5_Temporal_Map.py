@@ -11,7 +11,10 @@ import plotly.express as px
 import streamlit as st
 
 from dashboards.streamlit.utils.db import run_query
-from dashboards.streamlit.utils.queries import TEMPORAL_MAP_QUERY
+from dashboards.streamlit.utils.queries import (
+    TEMPORAL_MAP_LATEST_QUERY,
+    TEMPORAL_MAP_QUERY,
+)
 
 
 MAP_LAYERS = {
@@ -53,15 +56,6 @@ or focus only on the latest available month.
 """
 )
 
-df = run_query(TEMPORAL_MAP_QUERY)
-
-if df.empty:
-    st.warning("No temporal map data found.")
-    st.stop()
-
-df["month_date"] = pd.to_datetime(df["month_date"])
-df["month_str"] = df["month_date"].dt.strftime("%Y-%m")
-
 left, middle, right = st.columns(3)
 
 with left:
@@ -85,6 +79,16 @@ with right:
         step=250,
     )
 
+query = TEMPORAL_MAP_LATEST_QUERY if latest_only else TEMPORAL_MAP_QUERY
+df = run_query(query)
+
+if df.empty:
+    st.warning("No temporal map data found.")
+    st.stop()
+
+df["month_date"] = pd.to_datetime(df["month_date"])
+df["month_str"] = df["month_date"].dt.strftime("%Y-%m")
+
 layer_config = MAP_LAYERS[selected_layer]
 color_col = layer_config["column"]
 
@@ -100,12 +104,7 @@ geojson = {
     "features": [],
 }
 
-seen_geoids = set()
-
-for _, row in df.iterrows():
-    if row["geoid"] in seen_geoids:
-        continue
-
+for _, row in df.drop_duplicates(subset="geoid").iterrows():
     geojson["features"].append(
         {
             "type": "Feature",
@@ -116,8 +115,6 @@ for _, row in df.iterrows():
             "geometry": row["geometry"],
         }
     )
-
-    seen_geoids.add(row["geoid"])
 
 common_args = dict(
     data_frame=map_df,

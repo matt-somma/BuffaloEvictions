@@ -40,6 +40,8 @@ def get_streamlit_secrets() -> dict | None:
     database = "..."
     user = "..."
     password = "..."
+    sslmode = "require"  # optional
+    connect_timeout = 10  # optional
     """
     try:
         import streamlit as st
@@ -67,6 +69,8 @@ def get_database_settings() -> dict:
             "database": streamlit_secrets.get("database"),
             "user": streamlit_secrets.get("user"),
             "password": streamlit_secrets.get("password"),
+            "sslmode": streamlit_secrets.get("sslmode"),
+            "connect_timeout": streamlit_secrets.get("connect_timeout"),
         }
     else:
         load_dotenv(ENV_PATH)
@@ -77,11 +81,22 @@ def get_database_settings() -> dict:
             "database": os.getenv("DB_NAME"),
             "user": os.getenv("DB_USER"),
             "password": os.getenv("DB_PASSWORD"),
+            "sslmode": os.getenv("DB_SSLMODE"),
+            "connect_timeout": os.getenv("DB_CONNECT_TIMEOUT"),
         }
+
+    required_keys = [
+        "host",
+        "port",
+        "database",
+        "user",
+        "password",
+    ]
 
     missing = [
         key
-        for key, value in settings.items()
+        for key in required_keys
+        for value in [settings.get(key)]
         if value is None or str(value).strip() == ""
     ]
 
@@ -94,11 +109,28 @@ def get_database_settings() -> dict:
     return settings
 
 
-def get_database_url() -> str:
+def _build_connect_args(settings: dict) -> dict:
+    """
+    Build optional psycopg2 connect arguments for cloud-hosted databases.
+    """
+    connect_args = {}
+
+    sslmode = settings.get("sslmode")
+    if sslmode and str(sslmode).strip():
+        connect_args["sslmode"] = str(sslmode).strip()
+
+    connect_timeout = settings.get("connect_timeout")
+    if connect_timeout not in (None, ""):
+        connect_args["connect_timeout"] = int(connect_timeout)
+
+    return connect_args
+
+
+def get_database_url(settings: dict | None = None) -> str:
     """
     Build SQLAlchemy database URL from either Streamlit secrets or .env values.
     """
-    settings = get_database_settings()
+    settings = settings or get_database_settings()
 
     user = quote_plus(str(settings["user"]))
     password = quote_plus(str(settings["password"]))
@@ -116,11 +148,15 @@ def get_engine() -> Engine:
     """
     Create SQLAlchemy engine for PostgreSQL/PostGIS.
     """
-    database_url = get_database_url()
+    settings = get_database_settings()
+    database_url = get_database_url(settings)
+    connect_args = _build_connect_args(settings)
 
     return create_engine(
         database_url,
+        connect_args=connect_args,
         pool_pre_ping=True,
+        pool_recycle=1800,
         future=True,
     )
 

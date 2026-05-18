@@ -73,3 +73,38 @@ ORDER BY
     h.month_date,
     h.geoid;
 """
+
+TEMPORAL_MAP_LATEST_QUERY = """
+WITH latest_month AS (
+    SELECT MAX(month_date) AS month_date
+    FROM analytics.tract_state_history
+)
+SELECT
+    h.geoid,
+    h.month_date,
+
+    COALESCE(
+        n.dominant_neighborhood || ' (' || h.geoid || ')',
+        r.geo_name,
+        h.geoid
+    ) AS display_name,
+
+    h.neighborhood_trajectory,
+    h.combined_trajectory_score,
+    h.acceleration_score,
+    h.rolling_3m_active_cases,
+    h.rolling_12m_active_cases,
+
+    ST_AsGeoJSON(r.geom)::json AS geometry
+
+FROM analytics.tract_state_history h
+JOIN latest_month lm
+    ON h.month_date = lm.month_date
+LEFT JOIN analytics.housing_risk_features_v2 r
+    ON h.geoid = r.geoid
+LEFT JOIN analytics.tract_neighborhood_labels n
+    ON h.geoid = n.geoid
+WHERE h.geoid <> 'UNKNOWN'
+  AND r.geom IS NOT NULL
+ORDER BY h.geoid;
+"""
