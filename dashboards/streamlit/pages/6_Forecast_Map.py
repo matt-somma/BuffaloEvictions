@@ -79,6 +79,83 @@ may be good candidates for proactive monitoring or intervention.
 """
 )
 
+st.info(
+    """
+Think of this page as the spatial risk-prioritization view.
+It is designed to help answer three questions:
+
+1. Where are forecasted risks clustering geographically?
+2. Which high-risk tracts are still in non-severe current states?
+3. How does forecast risk align with structural vulnerability across the city?
+"""
+)
+
+with st.expander("What this map is showing"):
+    st.markdown(
+        """
+This map visualizes the model's forecasted probability that a tract will enter
+**Rapid Deterioration** or **Chronic Distress** within the selected horizon.
+
+Unlike the Hotspot page, which focuses on **current condition**, this page is about
+**future severe-risk geography**.
+
+That makes it especially useful for:
+
+- identifying spatial clusters of risk,
+- spotting corridors of deterioration,
+- and finding tracts that may deserve intervention before they become severe.
+"""
+    )
+
+with st.expander("How to interpret the map colors and filters"):
+    st.markdown(
+        """
+- Darker tracts have higher forecasted severe-distress probability.
+
+- The **forecast horizon** changes the time window of the prediction.
+
+- The **minimum predicted probability** slider lets you tighten the map to focus on
+  a smaller set of more urgent cases.
+
+- The **current trajectory state** filter helps you distinguish between:
+  tracts already under visible strain and tracts that still look less severe today.
+
+- The **early-intervention only** toggle is especially helpful when you want to focus
+  on prevention rather than already-entrenched distress.
+"""
+    )
+
+with st.expander("How to read spatial patterns"):
+    st.markdown(
+        """
+Useful patterns include:
+
+- **Clusters of elevated risk**
+  can indicate neighborhood-level or spillover dynamics rather than isolated tract issues.
+
+- **A high-risk tract surrounded by other stressed tracts**
+  may suggest localized contagion or reinforcing instability.
+
+- **A high-risk tract surrounded by lower-risk tracts**
+  may point to a more isolated pocket of concern.
+
+- **High forecast risk paired with high structural vulnerability**
+  can indicate both acute and underlying risk.
+"""
+    )
+
+with st.expander("How to use this page with the rest of the platform"):
+    st.markdown(
+        """
+This page is strongest when used together with the other views:
+
+- Use **Hotspot Analysis** to understand how risky tracts are behaving right now.
+- Use **Forecast Risk** to compare specific tracts across multiple horizons.
+- Use **Early Intervention Candidates** to narrow to the most actionable non-severe tracts.
+- Use **Tract Explorer** to inspect historical trend context before making decisions.
+"""
+    )
+
 HORIZON_ORDER = ["1m", "3m", "6m", "12m"]
 
 selected_horizon = st.selectbox(

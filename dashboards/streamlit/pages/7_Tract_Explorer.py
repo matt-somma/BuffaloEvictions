@@ -33,6 +33,92 @@ st.set_page_config(
 
 st.title("Tract Explorer")
 
+st.info(
+    """
+Think of this page as the tract-level case review view.
+It is designed to help answer three questions:
+
+1. How has one tract changed over time?
+2. Is current risk part of a long pattern or a more recent shift?
+3. Does the tract look stable, improving, volatile, or deteriorating?
+"""
+)
+
+with st.expander("What this page is for"):
+    st.markdown(
+        """
+This page lets you inspect one tract's monthly history in detail.
+It is especially useful when a tract has already been flagged elsewhere in the dashboard
+and you want to understand the story behind that flag.
+
+Use it to move from:
+
+- **citywide comparison**
+  to
+- **single-tract historical diagnosis**
+
+so you can see whether a tract's current condition reflects chronic burden,
+recent worsening, recovery, or repeated instability.
+"""
+    )
+
+with st.expander("How to interpret the key metrics at the top"):
+    st.markdown(
+        """
+- **Current State**
+  is the tract's latest rule-based trajectory label.
+
+- **Trajectory Score**
+  summarizes how burdened and/or unstable the tract currently looks relative to peers.
+
+- **3M Active Cases**
+  highlights near-term pressure.
+
+- **12M Active Cases**
+  shows the longer-run burden and helps distinguish temporary spikes from sustained stress.
+"""
+    )
+
+with st.expander("How to read the charts"):
+    st.markdown(
+        """
+- **Rolling Distress Trend**
+  shows short-, medium-, and longer-term active-case pressure.
+  If the 3M line rises above the 12M line, the tract may be worsening faster than its baseline.
+
+- **Trajectory Score Over Time**
+  shows how the tract's relative risk status changes month to month.
+  Rising values generally indicate growing concern.
+
+- **State History**
+  shows when the tract moved between Stable, Improving, Emerging Risk,
+  Rapid Deterioration, and Chronic Distress.
+  Repeated transitions can indicate volatility, while long runs in severe states
+  can indicate entrenchment.
+"""
+    )
+
+with st.expander("How to use this page for tract review"):
+    st.markdown(
+        """
+Useful review patterns include:
+
+- **Sustained high 12M burden**
+  suggests chronic pressure.
+
+- **Sharp increase in 3M burden**
+  can indicate a newer deterioration signal.
+
+- **State bouncing between categories**
+  can indicate instability even if the tract is not always severe.
+
+- **Improving current state after a long severe run**
+  can indicate recovery, but often with continued vulnerability.
+
+This page is often the best final check before treating a tract as a priority case.
+"""
+    )
+
 tracts = run_query(TRACT_LIST_QUERY)
 
 tract_lookup = {
