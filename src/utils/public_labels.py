@@ -14,6 +14,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 SETTINGS_PATH = ROOT / "config" / "public_label_settings.json"
 ALIASES_PATH = ROOT / "config" / "public_neighborhood_aliases.csv"
+TRACT_ALIASES_PATH = ROOT / "config" / "public_tract_aliases.csv"
 DISPLAY_NAME_PATTERN = re.compile(r"^(?P<base>.+?) \((?P<geoid>[^()]+)\)$")
 
 
@@ -141,6 +142,24 @@ def _alias_lookup(names: list[str], configured_aliases: dict[str, str], prefix: 
     return aliases
 
 
+@lru_cache(maxsize=1)
+def _load_tract_alias_map() -> dict[str, str]:
+    aliases: dict[str, str] = {}
+
+    if not TRACT_ALIASES_PATH.exists():
+        return aliases
+
+    with TRACT_ALIASES_PATH.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            geoid = (row.get("geoid") or "").strip()
+            public_label = (row.get("public_label") or "").strip()
+            if geoid and public_label:
+                aliases[geoid] = public_label
+
+    return aliases
+
+
 def _build_tract_keys(
     label_parts: list[tuple[str | None, str | None]],
     tract_prefix: str,
@@ -188,6 +207,7 @@ def mask_dataframe_public_labels(
 
     aliases = _alias_lookup(base_names, _load_alias_map(), settings["alias_prefix"])
     tract_keys = _build_tract_keys(label_parts, settings["tract_prefix"])
+    tract_aliases = _load_tract_alias_map()
 
     public_display_names: list[object] = []
     public_neighborhoods: list[object] = []
@@ -202,10 +222,13 @@ def mask_dataframe_public_labels(
 
         alias = aliases.get(base_name, base_name)
         tract_key = tract_keys.get((base_name, geoid_text)) if geoid_text else None
+        direct_tract_alias = tract_aliases.get(geoid_text) if geoid_text else None
         public_neighborhoods.append(alias)
-        public_tract_keys.append(tract_key)
+        public_tract_keys.append(direct_tract_alias or tract_key)
 
-        if settings["include_geoid"] and geoid_text:
+        if direct_tract_alias:
+            public_display_names.append(direct_tract_alias)
+        elif settings["include_geoid"] and geoid_text:
             public_display_names.append(f"{alias} ({geoid_text})")
         elif tract_key:
             public_display_names.append(f"{alias} / {tract_key}")
