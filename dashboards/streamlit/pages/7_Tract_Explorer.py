@@ -123,7 +123,7 @@ tracts = run_query(TRACT_LIST_QUERY)
 
 tract_lookup = {
     row["display_name"]: row["geoid"]
-    for _, row in tracts.iterrows()
+    for _, row in tracts.sort_values("display_name").iterrows()
 }
 
 selected_label = st.selectbox(

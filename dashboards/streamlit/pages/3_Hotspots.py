@@ -10,6 +10,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboards.streamlit.utils.db import run_query
+from src.utils.public_labels import public_labeling_enabled
 
 
 HOTSPOT_QUERY = """
@@ -151,6 +152,7 @@ temporal map, and tract explorer pages.
     )
 
 df = run_query(HOTSPOT_QUERY)
+public_mode = public_labeling_enabled(st.secrets)
 
 if df.empty:
     st.warning("No hotspot data found.")
@@ -183,18 +185,23 @@ top_hotspots = (
     .head(top_n)
 )
 
-display_cols = [
-    "geoid",
-    "display_name",
-    "current_trajectory",
-    "previous_trajectory",
-    "combined_trajectory_score",
-    "acceleration_score",
-    "distress_persistence_rate",
-    "months_in_current_state",
-    "months_any_distress",
-    "total_state_changes",
-]
+display_cols = ["display_name"]
+
+if not public_mode:
+    display_cols.insert(0, "geoid")
+
+display_cols.extend(
+    [
+        "current_trajectory",
+        "previous_trajectory",
+        "combined_trajectory_score",
+        "acceleration_score",
+        "distress_persistence_rate",
+        "months_in_current_state",
+        "months_any_distress",
+        "total_state_changes",
+    ]
+)
 
 st.dataframe(
     top_hotspots[display_cols],
@@ -234,15 +241,26 @@ scatter_fig = px.scatter(
     y="combined_trajectory_score",
     color="current_trajectory",
     size="months_any_distress",
-    hover_data=[
-        "geoid",
-        "display_name",
-        "previous_trajectory",
-        "months_in_current_state",
-        "total_state_changes",
-        "rolling_3m_active_cases",
-        "rolling_12m_active_cases",
-    ],
+    hover_data=(
+        [
+            "display_name",
+            "previous_trajectory",
+            "months_in_current_state",
+            "total_state_changes",
+            "rolling_3m_active_cases",
+            "rolling_12m_active_cases",
+        ]
+        if public_mode
+        else [
+            "geoid",
+            "display_name",
+            "previous_trajectory",
+            "months_in_current_state",
+            "total_state_changes",
+            "rolling_3m_active_cases",
+            "rolling_12m_active_cases",
+        ]
+    ),
     color_discrete_map=STATE_COLORS,
     labels={
         "distress_persistence_rate": "Distress Persistence Rate",
@@ -264,54 +282,54 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("### Rapid Deterioration")
+    rapid_cols = [
+        "display_name",
+        "combined_trajectory_score",
+        "months_in_current_state",
+        "distress_persistence_rate",
+    ]
+    if not public_mode:
+        rapid_cols.insert(0, "geoid")
     st.dataframe(
         df[df["current_trajectory"] == "Rapid Deterioration"]
         .sort_values("combined_trajectory_score", ascending=False)
-        .head(10)[
-            [
-                "geoid",
-                "display_name",
-                "combined_trajectory_score",
-                "months_in_current_state",
-                "distress_persistence_rate",
-            ]
-        ],
+        .head(10)[rapid_cols],
         use_container_width=True,
         hide_index=True,
     )
 
 with col2:
     st.markdown("### Chronic Distress")
+    chronic_cols = [
+        "display_name",
+        "combined_trajectory_score",
+        "months_in_current_state",
+        "distress_persistence_rate",
+    ]
+    if not public_mode:
+        chronic_cols.insert(0, "geoid")
     st.dataframe(
         df[df["current_trajectory"] == "Chronic Distress"]
         .sort_values("distress_persistence_rate", ascending=False)
-        .head(10)[
-            [
-                "geoid",
-                "display_name",
-                "combined_trajectory_score",
-                "months_in_current_state",
-                "distress_persistence_rate",
-            ]
-        ],
+        .head(10)[chronic_cols],
         use_container_width=True,
         hide_index=True,
     )
 
 with col3:
     st.markdown("### Improving")
+    improving_cols = [
+        "display_name",
+        "combined_trajectory_score",
+        "months_in_current_state",
+        "distress_persistence_rate",
+    ]
+    if not public_mode:
+        improving_cols.insert(0, "geoid")
     st.dataframe(
         df[df["current_trajectory"] == "Improving"]
         .sort_values("acceleration_score", ascending=True)
-        .head(10)[
-            [
-                "geoid",
-                "display_name",
-                "combined_trajectory_score",
-                "months_in_current_state",
-                "distress_persistence_rate",
-            ]
-        ],
+        .head(10)[improving_cols],
         use_container_width=True,
         hide_index=True,
     )
