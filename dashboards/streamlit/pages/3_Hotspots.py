@@ -64,6 +64,92 @@ including rapid deterioration, chronic distress, emerging risk, and recovery pat
 """
 )
 
+st.info(
+    """
+Think of this page as a current-condition triage view.
+It is designed to help answer three questions:
+
+1. Which tracts appear most stressed right now?
+2. Which tracts have persistent or entrenched distress?
+3. Which tracts may be recovering, but still deserve monitoring?
+"""
+)
+
+with st.expander("What this page means by a hotspot"):
+    st.markdown(
+        """
+A **hotspot** is not just a tract with a high raw case count.
+In this dashboard, hotspots are tracts that score highly on the platform's
+trajectory and persistence metrics, which means they may be:
+
+- carrying a high sustained burden of active housing distress,
+- worsening faster than their own recent baseline,
+- remaining stuck in distress for long periods,
+- or repeatedly cycling through unstable states.
+
+The page combines:
+
+- **current trajectory state**,
+- **trajectory score**,
+- **acceleration score**,
+- **distress persistence**, and
+- **state history**
+
+to help distinguish between chronic structural distress, new deterioration,
+and possible improvement.
+"""
+    )
+
+with st.expander("How to interpret the core metrics"):
+    st.markdown(
+        """
+- **Current trajectory**
+  describes the tract's present rule-based condition: Stable, Improving,
+  Emerging Risk, Rapid Deterioration, or Chronic Distress.
+
+- **Combined trajectory score**
+  is the main composite hotspot metric on this page. Higher scores indicate
+  a tract that looks more burdened and/or more unstable relative to other tracts.
+
+- **Acceleration score**
+  compares recent active-case pressure to the tract's longer-run baseline.
+  Positive values suggest worsening momentum.
+
+- **Distress persistence rate**
+  shows how much of the tract's observed history has been spent in
+  Emerging Risk, Rapid Deterioration, or Chronic Distress.
+
+- **Months in current state**
+  helps distinguish a newly changed tract from one that has been stuck in the
+  same condition for a long time.
+
+- **Total state changes**
+  indicates how volatile or unstable a tract's history has been over time.
+"""
+    )
+
+with st.expander("How to use this page for decision-making"):
+    st.markdown(
+        """
+Useful reading patterns include:
+
+- **High trajectory score + high persistence**
+  can indicate entrenched distress that may need sustained intervention.
+
+- **High trajectory score + high acceleration + low persistence**
+  can indicate a tract that is deteriorating quickly right now.
+
+- **Improving state + still-high persistence**
+  can indicate recovery from a long period of strain, where support may still matter.
+
+- **Frequent state changes**
+  can indicate instability or fragility, even if the tract is not currently in the most severe state.
+
+This page is best used as a prioritization tool alongside the forecast,
+temporal map, and tract explorer pages.
+"""
+    )
+
 df = run_query(HOTSPOT_QUERY)
 
 if df.empty:

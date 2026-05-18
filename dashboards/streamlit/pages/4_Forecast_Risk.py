@@ -67,6 +67,100 @@ or longer-term risk of entering **Rapid Deterioration** or **Chronic Distress**.
 """
 )
 
+st.info(
+    """
+Think of this page as a forward-looking tract comparison view.
+It is designed to help answer three questions:
+
+1. Which selected tracts look riskiest across the forecast horizons?
+2. Is risk concentrated in the near term, the long term, or both?
+3. What factors are most responsible for the model's risk signal?
+"""
+)
+
+with st.expander("What this page is forecasting"):
+    st.markdown(
+        """
+The forecasts on this page estimate the probability that a tract will enter
+either **Rapid Deterioration** or **Chronic Distress** within a selected horizon.
+
+That means the model is not predicting a generic worsening score.
+It is specifically estimating the likelihood of moving into one of the platform's
+most severe states.
+
+Each horizon answers a slightly different operational question:
+
+- **1M**
+  Near-term warning and immediate watchlist signal.
+
+- **3M**
+  Short tactical intervention risk.
+
+- **6M**
+  Medium-term planning horizon for stabilization work.
+
+- **12M**
+  Longer-term structural vulnerability signal.
+"""
+    )
+
+with st.expander("How to interpret the forecast metrics"):
+    st.markdown(
+        """
+- **Predicted probability**
+  is the main forecast risk value. Higher values mean the model sees a greater
+  chance the tract will enter severe distress within the selected horizon.
+
+- **Predicted class**
+  is a thresholded decision flag derived from the probability.
+  It is useful for triage, but the probability itself carries more nuance.
+
+- **Risk percentile**
+  shows where the tract ranks relative to other scored tracts.
+  This is often more useful for prioritization than the raw probability alone.
+
+- **Top drivers**
+  summarize the strongest SHAP-based contributors behind the forecast.
+  They help explain *why* the model is flagging a tract.
+
+- **Actual target**
+  appears only because this dataset includes held-out scored evaluation rows.
+  It is mainly useful for model review, not for interpreting a truly future unknown month.
+"""
+    )
+
+with st.expander("How to read the horizon patterns"):
+    st.markdown(
+        """
+Some useful patterns include:
+
+- **High 1M and high 12M risk**
+  can indicate both immediate pressure and deeper structural vulnerability.
+
+- **High 1M but lower 12M risk**
+  can indicate a nearer-term shock or acute instability.
+
+- **Lower 1M but higher 12M risk**
+  can indicate slower-moving deterioration that may not yet be visible as a crisis.
+
+- **Consistently elevated risk across all horizons**
+  can indicate a tract that deserves sustained monitoring and likely intervention planning.
+"""
+    )
+
+with st.expander("How to use this page with the rest of the platform"):
+    st.markdown(
+        """
+This page works best when combined with the other views:
+
+- Use **Hotspot Analysis** to understand the tract's current condition.
+- Use **Tract Explorer** to see how conditions evolved over time.
+- Use **Forecast Map** to see where high-risk tracts cluster spatially.
+- Use **Early Intervention Candidates** to focus on tracts that are not yet severe,
+  but may be heading there.
+"""
+    )
+
 df = run_query(TRACT_FORECAST_QUERY)
 
 if df.empty:

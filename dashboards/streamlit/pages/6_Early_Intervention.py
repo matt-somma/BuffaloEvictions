@@ -70,6 +70,89 @@ may be good candidates for proactive monitoring or intervention.
 """
 )
 
+st.info(
+    """
+Think of this page as a prevention and prioritization view.
+It is designed to help answer three questions:
+
+1. Which non-severe tracts may be drifting toward future severe distress?
+2. Which tracts deserve earlier monitoring before conditions become entrenched?
+3. Which high-risk candidates look most actionable right now?
+"""
+)
+
+with st.expander("What makes a tract an early-intervention candidate"):
+    st.markdown(
+        """
+This page intentionally focuses on tracts that are currently:
+
+- **Stable**
+- **Improving**
+- **Emerging Risk**
+
+and excludes tracts already in the most severe states.
+
+The idea is to identify places where deterioration may still be preventable.
+These are tracts where the model sees elevated future risk even though the tract
+is not yet in **Rapid Deterioration** or **Chronic Distress**.
+"""
+    )
+
+with st.expander("How to interpret the candidate list"):
+    st.markdown(
+        """
+- **Predicted probability**
+  is the core risk signal. Higher values mean the tract is more likely to enter severe distress
+  within the selected horizon.
+
+- **Current state**
+  gives the tract's present condition, which helps distinguish prevention opportunities
+  from already severe cases.
+
+- **Risk percentile**
+  is useful for rank-ordering candidate tracts when resources are limited.
+
+- **Top drivers**
+  summarize the strongest model explanations and can point to whether the signal is being driven by
+  recent burden, persistence, spillover, or structural vulnerability.
+"""
+    )
+
+with st.expander("How to use the filters well"):
+    st.markdown(
+        """
+- Increase the **minimum predicted probability** slider when you want a narrower,
+  more urgent watchlist.
+
+- Compare different **forecast horizons** to distinguish immediate prevention needs
+  from slower-burning structural risk.
+
+- Review candidate tracts across multiple months to see whether they are repeatedly
+  appearing on the list or only surfacing briefly.
+"""
+    )
+
+with st.expander("How to interpret actionability"):
+    st.markdown(
+        """
+Some useful patterns include:
+
+- **Stable today, but high future risk**
+  can indicate hidden fragility or growing spillover pressure.
+
+- **Improving today, but still high future risk**
+  can indicate a tract that may be recovering but remains vulnerable to relapse.
+
+- **Emerging Risk today, plus high forecast probability**
+  can indicate a tract that may be close to crossing into a severe state
+  without intervention.
+
+This page is best used as an early-warning shortlist, not as a final decision rule.
+The strongest candidates should usually be reviewed alongside hotspot, tract history,
+and map context before action is taken.
+"""
+    )
+
 HORIZON_ORDER = ["1m", "3m", "6m", "12m"]
 
 selected_horizon = st.selectbox(
