@@ -56,6 +56,92 @@ or focus only on the latest available month.
 """
 )
 
+st.info(
+    """
+Think of this page as the citywide change-over-time view.
+It is designed to help answer three questions:
+
+1. How are tract conditions shifting across Buffalo over time?
+2. Are current problem areas long-running, newly emerging, or improving?
+3. Which map layer best explains the kind of change we care about right now?
+"""
+)
+
+with st.expander("What this map is showing"):
+    st.markdown(
+        """
+This page visualizes monthly tract conditions over time rather than only showing a single snapshot.
+
+It is especially useful for:
+
+- seeing how housing instability spreads or recedes spatially,
+- comparing short-term and long-term burden,
+- and identifying whether a tract's current condition is part of a larger neighborhood trend.
+
+Unlike the Forecast Map, this page is about **observed historical conditions** rather than model-predicted future risk.
+"""
+    )
+
+with st.expander("How to choose the right layer"):
+    st.markdown(
+        """
+- **Trajectory Score**
+  is the best general-purpose current-risk layer. It combines chronic burden and worsening momentum.
+
+- **Acceleration Score**
+  is best when you want to spot tracts worsening faster than their longer-run baseline.
+
+- **Rolling 3M Active Cases**
+  is best for recent short-term operational pressure.
+
+- **Rolling 12M Active Cases**
+  is best for identifying sustained or chronic burden over the longer term.
+"""
+    )
+
+with st.expander("How to interpret the animation and latest-month toggle"):
+    st.markdown(
+        """
+- Use the animation when you want to understand sequence and direction of change.
+
+- Use **Latest month only** when you want a cleaner operational snapshot without the historical motion.
+
+- If a tract brightens quickly in the animation, that often suggests recent worsening.
+
+- If a tract stays elevated across many months, that usually suggests persistent burden rather than a temporary spike.
+"""
+    )
+
+with st.expander("How to read spatial-temporal patterns"):
+    st.markdown(
+        """
+Useful patterns include:
+
+- **Persistent elevated areas**
+  can indicate entrenched neighborhood stress.
+
+- **Newly brightening clusters**
+  can indicate emerging risk or spatial spillover.
+
+- **A tract worsening while nearby tracts also worsen**
+  can indicate a broader submarket or neighborhood dynamic.
+
+- **Improvement in one area while nearby tracts remain elevated**
+  can suggest uneven recovery.
+"""
+    )
+
+with st.expander("How to use this page with the rest of the platform"):
+    st.markdown(
+        """
+This page works best in combination with the other views:
+
+- Use **Hotspot Analysis** for current tract prioritization.
+- Use **Tract Explorer** for detailed single-tract history.
+- Use **Forecast Risk** and **Forecast Map** when you want to shift from observed history to future severe-risk prediction.
+"""
+    )
+
 left, middle, right = st.columns(3)
 
 with left:

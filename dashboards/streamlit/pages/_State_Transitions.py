@@ -37,6 +37,84 @@ st.set_page_config(
 
 st.title("Neighborhood State Transitions")
 
+st.info(
+    """
+Think of this page as the neighborhood-dynamics view.
+It is designed to help answer three questions:
+
+1. How do tracts usually move between states from month to month?
+2. Which transitions are common versus rare?
+3. Does the system tend to reinforce stability, deterioration, or recovery?
+"""
+)
+
+with st.expander("What this page is showing"):
+    st.markdown(
+        """
+This page summarizes how tracts move between the platform's state labels over adjacent months:
+
+- Stable
+- Improving
+- Emerging Risk
+- Rapid Deterioration
+- Chronic Distress
+
+Rather than focusing on one tract, this page shows the **system-level movement patterns**
+across the full tract set.
+
+It helps answer questions about whether neighborhood conditions are sticky, whether recovery is common,
+and how often tracts escalate into more severe distress.
+"""
+    )
+
+with st.expander("How to interpret the Sankey diagram"):
+    st.markdown(
+        """
+- Each node is a tract state.
+
+- Each band shows movement from one state to the next between monthly observations.
+
+- Thicker bands represent more transitions.
+
+- The slider removes very small transition probabilities so you can focus on the more meaningful flows.
+
+- Large self-to-self flows, such as **Stable -> Stable**, indicate persistence.
+"""
+    )
+
+with st.expander("How to read the transition probabilities"):
+    st.markdown(
+        """
+- **Transition probability** is conditional on the current state.
+  For example, the probability of `Emerging Risk -> Rapid Deterioration`
+  is measured out of all transitions starting from `Emerging Risk`.
+
+- High self-transition probabilities indicate that a state tends to persist month to month.
+
+- High transition probabilities into more severe states suggest deterioration pathways that may deserve monitoring.
+
+- Higher probabilities into less severe states suggest more common recovery or stabilization pathways.
+"""
+    )
+
+with st.expander("How to use this page for interpretation and planning"):
+    st.markdown(
+        """
+Useful takeaways include:
+
+- If **Stable -> Stable** dominates, most neighborhoods remain relatively steady month to month.
+
+- If **Emerging Risk -> Rapid Deterioration** is meaningful, Emerging Risk should be treated as a serious early-warning state.
+
+- If **Rapid Deterioration -> Chronic Distress** is common, short-term deterioration may often harden into entrenched distress.
+
+- If **Improving -> Stable** is common, recovery may be plausible once a tract exits distress.
+
+This page is especially useful for understanding the logic behind the forecasting problem:
+the model is trying to anticipate movement into the most severe states before those transitions happen.
+"""
+    )
+
 df = run_query(TRANSITION_MATRIX_QUERY)
 
 if df.empty:
