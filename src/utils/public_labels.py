@@ -1,19 +1,27 @@
-import streamlit as st
+import csv
+from functools import lru_cache
+import json
+import os
+from pathlib import Path
+import re
+from typing import Mapping
 
-try:
-    from src.utils.public_labels import (
-        LABEL_MODE_SESSION_KEY,
-        NEIGHBORHOOD_LABEL_MODE,
-        PUBLIC_LABEL_MODE,
-        get_label_mode,
-    )
-except ImportError:
-    from src.utils.public_labels import (
-        NEIGHBORHOOD_LABEL_MODE,
-        PUBLIC_LABEL_MODE,
-        get_label_mode,
-    )
-    LABEL_MODE_SESSION_KEY = "label_display_mode"
+import pandas as pd
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_DIR = PROJECT_ROOT / "config"
+SETTINGS_PATH = CONFIG_DIR / "public_label_settings.json"
+ALIASES_PATH = CONFIG_DIR / "public_neighborhood_aliases.csv"
+TRACT_ALIASES_PATH = CONFIG_DIR / "public_tract_aliases.csv"
+
+LABEL_MODE_SESSION_KEY = "label_display_mode"
+NEIGHBORHOOD_LABEL_MODE = "neighborhood"
+PUBLIC_LABEL_MODE = "public"
+
+DISPLAY_NAME_PATTERN = re.compile(
+    r"^(?P<base>.+?)\s*\((?P<geoid>[^()]+)\)$"
+)
 
 def _parse_bool(value: object, default: bool = False) -> bool:
     if value is None:
