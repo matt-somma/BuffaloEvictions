@@ -10,6 +10,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboards.streamlit.utils.db import run_query
+from dashboards.streamlit.utils.view_options import render_label_mode_control
 
 
 EARLY_INTERVENTION_QUERY = """
@@ -58,6 +59,8 @@ st.set_page_config(
     layout="wide",
 )
 
+render_label_mode_control()
+
 st.title("Early Intervention Candidates")
 
 st.markdown(
@@ -68,6 +71,10 @@ This map shows the model-predicted probability that each census tract will enter
 Use it as an early-warning layer: areas with high forecast risk but non-severe current states
 may be good candidates for proactive monitoring or intervention.
 """
+)
+
+st.caption(
+    "The candidate list on this page comes from the public v4 assessment-enhanced forecast layer."
 )
 
 st.info(
@@ -95,6 +102,9 @@ and excludes tracts already in the most severe states.
 The idea is to identify places where deterioration may still be preventable.
 These are tracts where the model sees elevated future risk even though the tract
 is not yet in **Rapid Deterioration** or **Chronic Distress**.
+
+The current public release uses the `v4_time_aware_live_scoring_assessment`
+forecast layer, which adds assessment-derived structural context to the earlier model.
 """
     )
 

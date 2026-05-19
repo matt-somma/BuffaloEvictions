@@ -15,6 +15,7 @@ from dashboards.streamlit.utils.queries import (
     TEMPORAL_MAP_LATEST_QUERY,
     TEMPORAL_MAP_QUERY,
 )
+from dashboards.streamlit.utils.view_options import render_label_mode_control
 
 
 MAP_LAYERS = {
@@ -45,6 +46,8 @@ st.set_page_config(
     page_title="Temporal Neighborhood Map",
     layout="wide",
 )
+
+render_label_mode_control()
 
 st.title("Temporal Neighborhood Risk Map")
 

@@ -8,12 +8,15 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import streamlit as st
 
+from dashboards.streamlit.utils.view_options import render_label_mode_control
+
 
 st.set_page_config(
     page_title="Buffalo Housing Instability Intelligence Platform",
     layout="wide",
 )
 
+render_label_mode_control()
 
 st.title("Buffalo Housing Instability Intelligence Platform")
 
@@ -22,6 +25,10 @@ st.markdown(
 A spatial-temporal analytics platform for understanding, forecasting,
 and visualizing neighborhood housing instability across Buffalo census tracts.
 """
+)
+
+st.caption(
+    "The current public forecast layer uses the v4 assessment-enhanced live-scoring model."
 )
 
 

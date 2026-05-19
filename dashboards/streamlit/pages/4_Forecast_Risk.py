@@ -11,6 +11,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboards.streamlit.utils.db import run_query
+from dashboards.streamlit.utils.view_options import render_label_mode_control
 
 
 TRACT_FORECAST_QUERY = """
@@ -58,6 +59,8 @@ st.set_page_config(
     layout="wide",
 )
 
+render_label_mode_control()
+
 st.title("Tract-Level Forecast Risk")
 
 st.markdown(
@@ -66,6 +69,10 @@ This page shows model-predicted future distress risk at the census-tract level.
 Use it to understand whether a tract appears to be at short-term, medium-term,
 or longer-term risk of entering **Rapid Deterioration** or **Chronic Distress**.
 """
+)
+
+st.caption(
+    "The public forecast layer on this page currently uses the v4 assessment-enhanced live-scoring model."
 )
 
 st.info(
@@ -84,6 +91,10 @@ with st.expander("What this page is forecasting"):
         """
 The forecasts on this page estimate the probability that a tract will enter
 either **Rapid Deterioration** or **Chronic Distress** within a selected horizon.
+
+The current public forecast layer is generated from the
+`v4_time_aware_live_scoring_assessment` model, which combines historical tract
+conditions, spillover signals, and assessment-derived structural features.
 
 That means the model is not predicting a generic worsening score.
 It is specifically estimating the likelihood of moving into one of the platform's
@@ -130,6 +141,9 @@ with st.expander("How to interpret the forecast metrics"):
 
 - **Score set**
   distinguishes held-out backtest rows from live current-month scoring rows.
+
+- **Model version**
+  for the current public release is `v4_time_aware_live_scoring_assessment`.
 """
     )
 

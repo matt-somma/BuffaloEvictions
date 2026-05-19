@@ -24,5 +24,8 @@ sources:
 
   buffalo_open_data:
     base_url: https://data.buffalony.gov/resource
+    assessment_roll_dataset_id: 4t8s-9yih
     code_violations_dataset_id: ivrf-k9vm
+    permits_dataset_id: 9p2d-f3yt
+    rental_registry_dataset_id: hpqg-ihzt
     page_size: 50000

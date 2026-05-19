@@ -37,7 +37,7 @@ SOURCE_OBJECTS = [
     {
         "object_name": "analytics.tract_forecast_scores",
         "grain": "One row per tract per month per forecast horizon",
-        "used_for": "Forecast pages, predicted risk, percentile ranking, thresholded class, SHAP driver summaries, and both backtest and live-scoring outputs.",
+        "used_for": "Forecast pages and the public forecast layer, including predicted risk, percentile ranking, thresholded class, SHAP driver summaries, and both backtest and live-scoring outputs from the v4 assessment-enhanced model.",
     },
     {
         "object_name": "analytics.neighborhood_transition_matrix",
@@ -302,15 +302,23 @@ METRIC_DEFINITIONS = [
         "source_object": "analytics.tract_forecast_scores",
         "definition": "Flag indicating whether a scored row comes from historical holdout backtesting or live current-month scoring.",
         "calculation": "Assigned by the training pipeline as holdout_backtest or live_scoring",
-        "business_interpretation": "This tells you whether you are looking at a row with known historical outcomes or a live forward-looking forecast where outcomes are not yet observed.",
+        "business_interpretation": "This tells you whether you are looking at a row with known historical outcomes or a live forward-looking forecast in the public forecast layer where outcomes are not yet observed.",
+    },
+    {
+        "metric": "model_version",
+        "category": "Forecast Outputs",
+        "source_object": "analytics.tract_forecast_scores",
+        "definition": "Version tag attached to each scored forecast row by the training pipeline.",
+        "calculation": "Assigned at scoring time by the model training script; the current public forecast layer uses v4_time_aware_live_scoring_assessment",
+        "business_interpretation": "This helps users and analysts confirm which forecast release they are viewing. The current public layer is powered by the assessment-enhanced v4 model.",
     },
     {
         "metric": "predicted_probability",
         "category": "Forecast Outputs",
         "source_object": "analytics.tract_forecast_scores",
         "definition": "Calibrated model-estimated probability that a tract will enter Rapid Deterioration or Chronic Distress within the selected horizon.",
-        "calculation": "Elastic-net logistic regression probability after sigmoid calibration",
-        "business_interpretation": "Higher values mean the model sees greater risk of entering severe distress within the selected horizon.",
+        "calculation": "Assessment-enhanced elastic-net logistic regression probability after sigmoid calibration",
+        "business_interpretation": "Higher values mean the current public forecast layer sees greater risk of entering severe distress within the selected horizon.",
     },
     {
         "metric": "raw_predicted_probability",

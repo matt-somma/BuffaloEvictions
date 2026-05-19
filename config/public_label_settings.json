@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "default_mode": "public",
   "include_geoid": false,
   "alias_prefix": "NBH",
   "tract_prefix": "CT"

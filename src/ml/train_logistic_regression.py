@@ -34,7 +34,7 @@ OUTPUT_DIR = PROJECT_ROOT / "data" / "model_results"
 LABELED_DATASET_QUERY = "SELECT * FROM analytics.tract_ml_features;"
 LIVE_SCORING_DATASET_QUERY = "SELECT * FROM analytics.tract_ml_scoring_features;"
 TRAIN_TEST_CUTOFF = pd.Timestamp("2023-01-01")
-MODEL_VERSION = "v3_time_aware_live_scoring"
+MODEL_VERSION = "v4_time_aware_live_scoring_assessment"
 
 
 FEATURES = [
@@ -44,6 +44,17 @@ FEATURES = [
     "rent_burden_rate",
     "no_vehicle_rate",
     "median_household_income",
+    "residential_parcel_share",
+    "multifamily_share_of_residential",
+    "residential_vacant_land_share",
+    "owner_occupied_proxy_share",
+    "poor_condition_share",
+    "fair_or_worse_condition_share",
+    "missing_condition_share",
+    "avg_residential_total_value",
+    "avg_land_value",
+    "avg_residential_living_area",
+    "pre_1940_residential_share",
 
     "active_cases_per_1000_housing_units",
     "cases_last_12m_per_1000_housing_units",

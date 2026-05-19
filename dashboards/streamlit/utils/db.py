@@ -62,9 +62,10 @@ def _run_query_cached(
 def run_query(query: str, params: dict | None = None) -> pd.DataFrame:
     try:
         normalized_params = tuple(sorted((params or {}).items()))
-        cache_salt = public_label_cache_key(st.secrets)
+        session_mode = st.session_state.get("label_display_mode", "")
+        cache_salt = f"{public_label_cache_key(st.secrets)}|mode={session_mode}"
         df = _run_query_cached(query, normalized_params, cache_salt)
-        return mask_dataframe_public_labels(df, secrets=st.secrets)
+        return mask_dataframe_public_labels(df, secrets=st.secrets, session_state=st.session_state)
     except ValueError as exc:
         _render_database_error(
             "Database credentials are missing or incomplete for this deployment.",

@@ -11,6 +11,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboards.streamlit.utils.db import run_query
+from dashboards.streamlit.utils.view_options import render_label_mode_control
 
 
 FORECAST_MAP_QUERY = """
@@ -67,6 +68,8 @@ st.set_page_config(
     layout="wide",
 )
 
+render_label_mode_control()
+
 st.title("Forecast Risk Map")
 
 st.markdown(
@@ -77,6 +80,10 @@ This map shows the model-predicted probability that each census tract will enter
 Use it as an early-warning layer: areas with high forecast risk but non-severe current states
 may be good candidates for proactive monitoring or intervention.
 """
+)
+
+st.caption(
+    "This public forecast map is currently powered by the v4 assessment-enhanced live-scoring layer."
 )
 
 st.info(
@@ -95,6 +102,9 @@ with st.expander("What this map is showing"):
         """
 This map visualizes the model's forecasted probability that a tract will enter
 **Rapid Deterioration** or **Chronic Distress** within the selected horizon.
+
+The current public layer uses the `v4_time_aware_live_scoring_assessment` model,
+which combines trajectory, spillover, and assessment-derived structural features.
 
 Unlike the Hotspot page, which focuses on **current condition**, this page is about
 **future severe-risk geography**.

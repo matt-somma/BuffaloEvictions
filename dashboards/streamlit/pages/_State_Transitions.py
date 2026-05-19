@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from dashboards.streamlit.utils.db import run_query
 from dashboards.streamlit.utils.queries import TRANSITION_MATRIX_QUERY
+from dashboards.streamlit.utils.view_options import render_label_mode_control
 
 
 STATE_ORDER = [
@@ -34,6 +35,8 @@ st.set_page_config(
     page_title="State Transitions",
     layout="wide",
 )
+
+render_label_mode_control()
 
 st.title("Neighborhood State Transitions")
 

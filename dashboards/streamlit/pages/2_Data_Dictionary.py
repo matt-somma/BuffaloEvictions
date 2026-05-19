@@ -13,12 +13,15 @@ from dashboards.streamlit.utils.data_dictionary import (
     METRIC_DEFINITIONS,
     SOURCE_OBJECTS,
 )
+from dashboards.streamlit.utils.view_options import render_label_mode_control
 
 
 st.set_page_config(
     page_title="Data Dictionary",
     layout="wide",
 )
+
+render_label_mode_control()
 
 st.title("Data Dictionary")
 
@@ -28,6 +31,10 @@ This page explains the key metrics, labels, and forecast outputs used throughout
 Use it as a glossary when you need to understand what a field means, where it comes from,
 and how it is calculated.
 """
+)
+
+st.caption(
+    "The current public forecast layer is powered by the v4 assessment-enhanced live-scoring model."
 )
 
 metric_df = pd.DataFrame(METRIC_DEFINITIONS)
@@ -112,6 +119,7 @@ with st.expander("Structural vulnerability metrics"):
 with st.expander("Forecast outputs"):
     st.markdown(
         """
+- The public forecast layer currently uses the `v4_time_aware_live_scoring_assessment` model release.
 - `predicted_probability` is the preferred risk field for dashboard interpretation.
 - `predicted_class` depends on a tuned threshold and should be treated as a decision aid, not ground truth.
 - `risk_percentile` is a relative rank, which makes it useful for prioritization across tracts.
@@ -154,6 +162,10 @@ with faq_col2:
 **What is the forecast target?**
 
 The model predicts entry into `Rapid Deterioration` or `Chronic Distress` within a selected future horizon.
+
+**What powers the current public forecast layer?**
+
+The public forecast pages are currently driven by the `v4_time_aware_live_scoring_assessment` model, which adds assessment-derived structural features and live current-month scoring.
 
 **Are the state labels predicted by the model?**
 

@@ -107,7 +107,18 @@ acs AS (
         no_vehicle_score,
         income_stress_score,
         housing_instability_score_v1,
-        housing_instability_score_v2
+        housing_instability_score_v2,
+        residential_parcel_share,
+        multifamily_share_of_residential,
+        residential_vacant_land_share,
+        owner_occupied_proxy_share,
+        poor_condition_share,
+        fair_or_worse_condition_share,
+        missing_condition_share,
+        avg_residential_total_value,
+        avg_land_value,
+        avg_residential_living_area,
+        pre_1940_residential_share
     FROM analytics.housing_risk_features_v2
 ),
 
@@ -170,6 +181,17 @@ SELECT
     a.income_stress_score,
     a.housing_instability_score_v1,
     a.housing_instability_score_v2,
+    a.residential_parcel_share,
+    a.multifamily_share_of_residential,
+    a.residential_vacant_land_share,
+    a.owner_occupied_proxy_share,
+    a.poor_condition_share,
+    a.fair_or_worse_condition_share,
+    a.missing_condition_share,
+    a.avg_residential_total_value,
+    a.avg_land_value,
+    a.avg_residential_living_area,
+    a.pre_1940_residential_share,
 
     c.total_cases,
     c.active_cases,

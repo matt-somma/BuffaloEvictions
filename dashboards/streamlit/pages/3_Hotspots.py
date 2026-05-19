@@ -10,7 +10,8 @@ import plotly.express as px
 import streamlit as st
 
 from dashboards.streamlit.utils.db import run_query
-from src.utils.public_labels import public_labeling_enabled
+from dashboards.streamlit.utils.view_options import render_label_mode_control
+from src.utils.public_labels import PUBLIC_LABEL_MODE
 
 
 HOTSPOT_QUERY = """
@@ -55,6 +56,8 @@ st.set_page_config(
     page_title="Hotspot Analysis",
     layout="wide",
 )
+
+label_mode = render_label_mode_control()
 
 st.title("Hotspot Analysis")
 
@@ -152,7 +155,7 @@ temporal map, and tract explorer pages.
     )
 
 df = run_query(HOTSPOT_QUERY)
-public_mode = public_labeling_enabled(st.secrets)
+public_mode = label_mode == PUBLIC_LABEL_MODE
 
 if df.empty:
     st.warning("No hotspot data found.")

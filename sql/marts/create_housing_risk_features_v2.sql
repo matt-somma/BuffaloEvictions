@@ -41,6 +41,25 @@ base AS (
         cv.cases_last_12m_per_1000_housing_units,
         cv.properties_with_violations_per_1000_housing_units,
 
+        af.parcel_count,
+        af.residential_parcel_count,
+        af.multifamily_parcel_count,
+        af.residential_vacant_land_count,
+        af.residential_parcel_share,
+        af.multifamily_share_of_residential,
+        af.residential_vacant_land_share,
+        af.owner_occupied_proxy_share,
+        af.non_owner_occupied_proxy_share,
+        af.poor_condition_share,
+        af.fair_or_worse_condition_share,
+        af.missing_condition_share,
+        af.avg_total_value,
+        af.avg_residential_total_value,
+        af.avg_land_value,
+        af.avg_residential_living_area,
+        af.avg_residential_units,
+        af.pre_1940_residential_share,
+
         h.geom
 
 
@@ -48,6 +67,9 @@ base AS (
 
     LEFT JOIN latest_code_features cv
         ON h.geoid = cv.geoid
+
+    LEFT JOIN analytics.tract_assessment_features_current af
+        ON h.geoid = af.geoid
 ),
 
 scored AS (

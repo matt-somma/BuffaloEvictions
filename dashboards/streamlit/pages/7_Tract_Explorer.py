@@ -15,6 +15,7 @@ from dashboards.streamlit.utils.queries import (
     TRACT_LIST_QUERY,
     TRACT_TIME_SERIES_QUERY,
 )
+from dashboards.streamlit.utils.view_options import render_label_mode_control
 
 
 STATE_COLORS = {
@@ -30,6 +31,8 @@ st.set_page_config(
     page_title="Tract Explorer",
     layout="wide",
 )
+
+render_label_mode_control()
 
 st.title("Tract Explorer")
 

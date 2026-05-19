@@ -16,6 +16,9 @@ SETTINGS_PATH = ROOT / "config" / "public_label_settings.json"
 ALIASES_PATH = ROOT / "config" / "public_neighborhood_aliases.csv"
 TRACT_ALIASES_PATH = ROOT / "config" / "public_tract_aliases.csv"
 DISPLAY_NAME_PATTERN = re.compile(r"^(?P<base>.+?) \((?P<geoid>[^()]+)\)$")
+LABEL_MODE_SESSION_KEY = "label_display_mode"
+NEIGHBORHOOD_LABEL_MODE = "neighborhood"
+PUBLIC_LABEL_MODE = "public"
 
 
 def _parse_bool(value: object, default: bool = False) -> bool:
@@ -65,7 +68,7 @@ def _load_alias_map() -> dict[str, str]:
 
 def _get_public_settings(secrets: Mapping[str, object] | None = None) -> dict[str, object]:
     settings = {
-        "enabled": True,
+        "default_mode": PUBLIC_LABEL_MODE,
         "include_geoid": False,
         "alias_prefix": "NBH",
         "tract_prefix": "CT",
@@ -85,18 +88,25 @@ def _get_public_settings(secrets: Mapping[str, object] | None = None) -> dict[st
     env_include_geoid = os.getenv("PUBLIC_INCLUDE_GEOID")
     env_alias_prefix = os.getenv("PUBLIC_ALIAS_PREFIX")
     env_tract_prefix = os.getenv("PUBLIC_TRACT_PREFIX")
+    env_default_mode = os.getenv("PUBLIC_LABEL_MODE")
 
     if env_enabled is not None:
-        settings["enabled"] = env_enabled
+        settings["default_mode"] = PUBLIC_LABEL_MODE if _parse_bool(env_enabled, False) else NEIGHBORHOOD_LABEL_MODE
     if env_include_geoid is not None:
         settings["include_geoid"] = env_include_geoid
     if env_alias_prefix:
         settings["alias_prefix"] = env_alias_prefix
     if env_tract_prefix:
         settings["tract_prefix"] = env_tract_prefix
+    if env_default_mode:
+        settings["default_mode"] = env_default_mode
+
+    default_mode = str(settings.get("default_mode") or PUBLIC_LABEL_MODE).strip().lower()
+    if default_mode not in {PUBLIC_LABEL_MODE, NEIGHBORHOOD_LABEL_MODE}:
+        default_mode = PUBLIC_LABEL_MODE
 
     return {
-        "enabled": _parse_bool(settings.get("enabled"), False),
+        "default_mode": default_mode,
         "include_geoid": _parse_bool(settings.get("include_geoid"), False),
         "alias_prefix": str(settings.get("alias_prefix") or "NBH").strip() or "NBH",
         "tract_prefix": str(settings.get("tract_prefix") or "CT").strip() or "CT",
@@ -180,7 +190,22 @@ def _build_tract_keys(
 
 
 def public_labeling_enabled(secrets: Mapping[str, object] | None = None) -> bool:
-    return bool(_get_public_settings(secrets)["enabled"])
+    return get_label_mode(secrets) == PUBLIC_LABEL_MODE
+
+
+def get_label_mode(
+    secrets: Mapping[str, object] | None = None,
+    session_state: Mapping[str, object] | None = None,
+) -> str:
+    settings = _get_public_settings(secrets)
+    mode = settings["default_mode"]
+
+    if isinstance(session_state, Mapping):
+        session_mode = session_state.get(LABEL_MODE_SESSION_KEY)
+        if isinstance(session_mode, str) and session_mode in {PUBLIC_LABEL_MODE, NEIGHBORHOOD_LABEL_MODE}:
+            mode = session_mode
+
+    return mode
 
 
 def public_label_cache_key(secrets: Mapping[str, object] | None = None) -> str:
@@ -196,7 +221,7 @@ def public_label_cache_key(secrets: Mapping[str, object] | None = None) -> str:
 
     return "|".join(
         [
-            f"enabled={int(settings['enabled'])}",
+            f"default_mode={settings['default_mode']}",
             f"include_geoid={int(settings['include_geoid'])}",
             f"alias_prefix={settings['alias_prefix']}",
             f"tract_prefix={settings['tract_prefix']}",
@@ -209,10 +234,11 @@ def mask_dataframe_public_labels(
     df: pd.DataFrame,
     *,
     secrets: Mapping[str, object] | None = None,
+    session_state: Mapping[str, object] | None = None,
 ) -> pd.DataFrame:
     settings = _get_public_settings(secrets)
 
-    if not settings["enabled"] or "display_name" not in df.columns:
+    if get_label_mode(secrets, session_state) != PUBLIC_LABEL_MODE or "display_name" not in df.columns:
         return df
 
     masked = df.copy()
